@@ -1,0 +1,34 @@
+{
+    "scopeName": "source.adn",
+    "patterns": [
+        {
+            "match": "\\b(if|else|while|try|except|match|case|for|import|Null)\\b",
+            "name": "keyword.control.adn"
+        },
+        {
+            "match": "\\b(int|float|bool|dict|set|list|array|str|tuple)\\b",
+            "name": "storage.type.adn"
+        },
+        {
+            "match": "\\b[0-9]+\\b",
+            "name": "constant.numeric.adn"
+        },
+        {
+            "match": "\"[^\"\\n]*\"|'[^'\\n]*'",
+            "name": "string.quoted.adn"
+        },
+        {
+            "begin": "##",
+            "end": "##",
+            "name": "comment.block.adn"
+        },
+        {
+            "match": "#.*$",
+            "name": "comment.line.adn"
+        }
+        
+    ]
+
+
+
+}

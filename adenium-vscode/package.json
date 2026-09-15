@@ -1,0 +1,47 @@
+{
+
+    "name": "adenium",
+    "displayName": "Adenium",
+    "description": "Adenium language support",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.105.0"
+    },
+    "contributes": {
+        "languages": [
+            {
+                "id": "adenium",
+                "aliases": ["Adenium", "adenium"],
+                "extensions": [".adn"],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./icons/adenium-v0.0.1.png",
+                    "dark": "./icons/adenium-v0.0.1.png"
+                }
+            }
+        ],
+        "grammars": [
+            {
+                "language": "adenium",
+                "scopeName": "source.adn",
+                "path": "./syntaxes/adenium.tmLanguage.json"
+            }
+        ],
+
+        "iconThemes": [
+            {
+                "id": "adenium-icons",
+                "label": "Adenium Icons",
+                "path": "./icons/adenium-icon-theme.json"
+            }
+        ]
+    },
+
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ezu1502/adenium.git"
+    }
+
+    
+
+}

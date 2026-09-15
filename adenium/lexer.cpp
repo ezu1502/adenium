@@ -1,4 +1,5 @@
 #include <cctype>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <set>
@@ -26,7 +27,7 @@ std::set<char> operators = {
     '<',
     '=',
     '%',
-    ':'
+    
 };
 
 std::set<std::string> doubleOperators {
@@ -52,6 +53,7 @@ std::set<char> delimiters = {
     ']',
     '{',
     '}',
+    ':',
 };
 
 class Lexer{
@@ -243,23 +245,48 @@ Token Lexer::nextToken(){
     return thisToken;
 }
 
-int main(){
+int main(int argc, char* argv[]){
     std::string sourcecode;
+    if (argc < 2 || std::string(argv[1]) == "-write"){
+        // INFO  write mode
+        std::string line;
+        std::cout << "Type your code:\n";
 
-    std::string line;
-    std::cout << "Type your code:\n";
+        while(true){
+            std::getline(std::cin, line);
 
-    while(true){
-        std::getline(std::cin, line);
+            if (line == "end"){
+                break;
+            }
 
-        if (line == "end"){
-            break;
+            sourcecode += line + "\n";
+        }
+    }
+    else if (argc == 2){
+        std::string fileName = argv[1];
+
+        if (!fileName.ends_with(".adn")){
+            std::cout << "Adenium can only compile .adn files!\n";
+            return 1;
         }
 
-        sourcecode += line + "\n";
+        std::ifstream file(fileName);
+
+        if (!file){
+            std::cout << "File couldn't be opened\n";
+            return 1;
+        }
+
+        sourcecode = std::string(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>()
+        );
     }
-    
-    
+    else {
+        std::cout << "\nOnly one command line argument supported\n";
+        return 1;
+    }
+  
     Lexer lexer(sourcecode);
     
     Token n;

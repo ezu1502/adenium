@@ -1,0 +1,13 @@
+{
+    "iconDefinitions": {
+        "_adenium": {
+            "iconPath": "./adenium-v0.0.1.png"
+        }
+        
+    },
+
+    "fileExtensions": {
+        "adn": "_adenium"
+    }
+
+}
