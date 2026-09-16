@@ -1,9 +1,12 @@
+#include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <set>
 #include <stdexcept>
+#include <vector>
+
 #include "tokens.hpp"
 
 std::set<std::string> keywords = {
@@ -15,6 +18,12 @@ std::set<std::string> keywords = {
     "match",
     "case",
     "for",
+    "import",
+    "from",
+    "in",
+    "and",
+    "asm",
+    "goto",
     "Null"
 };
 
@@ -54,6 +63,8 @@ std::set<char> delimiters = {
     '{',
     '}',
     ':',
+    ',',
+    '.'
 };
 
 class Lexer{
@@ -67,6 +78,11 @@ private:
 
     int cursor;
     bool advance();
+
+    int indentSize = 0;
+    std::vector<int> indentStack = {0};
+    int pendingDedents = 0;
+    bool lineStart = true;
 };
 
 Lexer::Lexer(std::string sourcecode){
@@ -84,27 +100,96 @@ bool Lexer::advance(){
 }
 
 Token Lexer::nextToken(){
+
+    if(pendingDedents > 0){
+        lineStart = false;
+        pendingDedents--;
+
+        return Token(TokenType::Dedent);
+    }
+    
+    if (lineStart){
+        
+        int spaces = 0;
+        while (cursor < codeSize && sourcecode[cursor] == ' '){
+            spaces++;
+            advance();
+        }
+
+        if (spaces > indentStack.back()){
+            if (indentSize == 0){
+                indentSize = spaces;
+            }
+
+            if (spaces % indentSize != 0){
+                throw std::runtime_error("IndentationError");
+            }
+
+            indentStack.push_back(spaces);
+            lineStart = false;
+
+            
+
+            return Token(TokenType::Indent);
+        }
+
+        if (spaces < indentStack.back()){
+            
+            while (spaces < indentStack.back()){
+                if (spaces % indentSize != 0){
+                    throw std::runtime_error("Indentation error");
+                }
+                indentStack.pop_back();
+                pendingDedents++;
+            }
+
+            if (spaces != indentStack.back()){
+                throw std::runtime_error("IndentationError");
+            }
+            
+            lineStart = false;
+            pendingDedents--;
+
+            return Token(TokenType::Dedent);
+        }
+
+        
+
+    }
+    
     while (cursor < codeSize && std::isspace(sourcecode[cursor]) && sourcecode[cursor] != '\n'){
         advance();
     }
+    // ! CHECAR ISSO AQUI
+    lineStart = false;
+
+
     Token thisToken;
     char current;
 
     int alpha = 0;
     int digits = 0;
+    int underscores = 0;
+    int dots = 0;
 
     while (cursor < codeSize){
         current = sourcecode[cursor];
-        
+
         if (std::isspace(current) && sourcecode[cursor] != '\n'){ // * FIM DO TOKEN     
             break;
         }
         
-        if (current == '\n'){
+        if (current == '\n' || current == ';'){
             if (thisToken.value.empty()){
                 thisToken.type = TokenType::NewLine;
-                thisToken.value = "\\n";
+                if (current == '\n'){
+                    thisToken.value = "\\n";
+                }
+                else {
+                    thisToken.value = ";";
+                }
                 advance();
+                lineStart = true;
                 return thisToken;
             }
             else {
@@ -133,39 +218,52 @@ Token Lexer::nextToken(){
                 while (true){
                     advance();
                     
-                    if (sourcecode[cursor+1] == '\n'){
+                    if (cursor + 1 < codeSize && sourcecode[cursor+1] == '\n'){
                         advance();
                         break;
                     }
+
+                    if (cursor + 1 == codeSize){
+                        return Token(TokenType::Comment);
+                    }
                 }
             }
-            thisToken.type = TokenType::Comment;
-            thisToken.value = "disconsider";
-            return thisToken;
+            
+            return Token(TokenType::Comment);
         }
 
         if (current == '\"'){
             advance();
-            while (sourcecode[cursor] != '\"'){
+            while (cursor < codeSize && sourcecode[cursor] != '\"'){
                 thisToken.value += sourcecode[cursor];
                 if (!advance()){
                     // ! syntax error!
                     throw std::runtime_error("Unclosed quotes");
                 }
             }
+
+            if (cursor >= codeSize){
+                throw std::runtime_error("Unclosed quotes");
+            }
+
             thisToken.type = TokenType::String;
             advance();
             return thisToken;
         }
         if (current == '\''){
             advance();
-            while (sourcecode[cursor] != '\''){
+            while (cursor < codeSize && sourcecode[cursor] != '\''){
                 thisToken.value += sourcecode[cursor];
                 if (!advance()){
                     // ! syntax error!
                     throw std::runtime_error("Unclosed quotes");
                 }
             }
+            
+            if (cursor >= codeSize){
+                throw std::runtime_error("Unclosed quotes");
+            }
+            
             thisToken.type = TokenType::String;
             advance();
             return thisToken;
@@ -174,6 +272,7 @@ Token Lexer::nextToken(){
 
         if (operators.contains(current)){
             if (thisToken.value.empty()){
+
                 Token operatorToken;
                 operatorToken.type = TokenType::Operator;
 
@@ -203,15 +302,38 @@ Token Lexer::nextToken(){
         }
 
         if (delimiters.contains(current)){
-            if (thisToken.value.empty()){
-                thisToken.value = current;
-                thisToken.type = TokenType::Delimiter;
-                advance();
-                return thisToken;
+            if (current == '.'){
+                bool decimal = (
+                    cursor > 0 &&
+                    cursor + 1 < codeSize &&
+                    std::isdigit(sourcecode[cursor - 1]) &&
+                    std::isdigit(sourcecode[cursor + 1])
+                );
+                
+                if (!decimal){
+                    if (thisToken.value.empty()){
+                        thisToken.value = current;
+                        thisToken.type = TokenType::Delimiter;
+                        advance();
+                        return thisToken;
+                    }
+                    else{
+                        break;
+                    }
+                }
             }
-            else{
-                break;
+            else {
+                if (thisToken.value.empty()){
+                    thisToken.value = current;
+                    thisToken.type = TokenType::Delimiter;
+                    advance();
+                    return thisToken;
+                }
+                else{
+                    break;
+                }
             }
+            
         }
 
 
@@ -220,6 +342,12 @@ Token Lexer::nextToken(){
         }
         else if (std::isalpha(current)){
             alpha++;
+        }
+        else if(current == '_'){
+            underscores++;
+        }
+        else if(current == '.'){
+            dots++;
         }
 
 
@@ -233,8 +361,17 @@ Token Lexer::nextToken(){
     }
     else if (alpha == 0 && digits > 0){
         thisToken.type = TokenType::Number;
+
+        thisToken.value.erase(
+            std::remove(thisToken.value.begin(), thisToken.value.end(), '_'),
+            thisToken.value.end()
+        );
+
+        if (dots > 1){
+            throw std::runtime_error("Syntax error");
+        }
     }
-    else if (alpha != 0){
+    else if (alpha != 0  || (underscores > 0 && digits == 0)){
         thisToken.type = TokenType::Identifier;
     }
 
@@ -290,16 +427,11 @@ int main(int argc, char* argv[]){
     Lexer lexer(sourcecode);
     
     Token n;
-    TokenType t = n.type;
-    std::string v = n.value;
     
-
     while (true){
         n = lexer.nextToken();
-        t = n.type;
-        v = n.value;
         
-        std::cout << tokenTypeName(t) << ", \"" << v << "\"\n";
+        std::cout << tokenTypeName(n.type) << ", \"" << n.value << "\"\n";
 
         if (n.type == TokenType::End){
             break;

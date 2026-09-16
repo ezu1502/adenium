@@ -16,10 +16,20 @@ std::string tokenTypeName(TokenType type){
             return "Operator";
         case TokenType::String:
             return "String";
+
         case TokenType::Comment:
             return "Comment";
         case TokenType::NewLine:
             return "Newline";
+
+        case TokenType::Indent:
+            return "Indent";
+        case TokenType::Dedent:
+            return "Dedent";
+        
+        case TokenType::JumpTag:
+            return "JumpTag";
+            
         case TokenType::End:
             return "End";
     }
