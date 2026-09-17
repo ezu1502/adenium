@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "tokens.hpp"
+#include "lexer.hpp"
 
 std::set<std::string> keywords = {
     "if",
@@ -24,6 +25,10 @@ std::set<std::string> keywords = {
     "and",
     "asm",
     "goto",
+    "void",
+    "def",
+    "raise",
+    "private",
     "Null"
 };
 
@@ -67,23 +72,6 @@ std::set<char> delimiters = {
     '.'
 };
 
-class Lexer{
-public:
-    Lexer(std::string sourcecode);
-    Token nextToken();
-
-private:
-    std::string sourcecode;
-    int codeSize;
-
-    int cursor;
-    bool advance();
-
-    int indentSize = 0;
-    std::vector<int> indentStack = {0};
-    int pendingDedents = 0;
-    bool lineStart = true;
-};
 
 Lexer::Lexer(std::string sourcecode){
     this->sourcecode = sourcecode;
@@ -382,60 +370,3 @@ Token Lexer::nextToken(){
     return thisToken;
 }
 
-int main(int argc, char* argv[]){
-    std::string sourcecode;
-    if (argc < 2 || std::string(argv[1]) == "-write"){
-        // INFO  write mode
-        std::string line;
-        std::cout << "Type your code:\n";
-
-        while(true){
-            std::getline(std::cin, line);
-
-            if (line == "end"){
-                break;
-            }
-
-            sourcecode += line + "\n";
-        }
-    }
-    else if (argc == 2){
-        std::string fileName = argv[1];
-
-        if (!fileName.ends_with(".adn")){
-            std::cout << "Adenium can only compile .adn files!\n";
-            return 1;
-        }
-
-        std::ifstream file(fileName);
-
-        if (!file){
-            std::cout << "File couldn't be opened\n";
-            return 1;
-        }
-
-        sourcecode = std::string(
-            (std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>()
-        );
-    }
-    else {
-        std::cout << "\nOnly one command line argument supported\n";
-        return 1;
-    }
-  
-    Lexer lexer(sourcecode);
-    
-    Token n;
-    
-    while (true){
-        n = lexer.nextToken();
-        
-        std::cout << tokenTypeName(n.type) << ", \"" << n.value << "\"\n";
-
-        if (n.type == TokenType::End){
-            break;
-        }
-    }
-
-}
